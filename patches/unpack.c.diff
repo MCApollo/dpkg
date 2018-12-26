@@ -1,0 +1,20 @@
+--- dpkg-1.19.2/src/unpack.c	2018-10-07 17:07:52.000000000 -0500
++++ dpkg-sileo/src/unpack.c	2018-12-25 23:00:01.899307770 -0600
+@@ -1447,6 +1447,17 @@
+ 
+   tar_deferred_extract(newfiles_queue.head, pkg);
+ 
++  //hopefully this code is enough to do extra inst
++  if (oldversionstatus == PKG_STAT_NOTINSTALLED || oldversionstatus == PKG_STAT_CONFIGFILES) {
++      maintscript_new(pkg, EXTRAINSTFILE, "extra-installation", cidir, cidirrest,
++                            "install", (char *)0);
++  } else {
++      maintscript_new(pkg, EXTRAINSTFILE, "extra-installation", cidir, cidirrest,
++                            "upgrade", versiondescribe(&pkg->installed.version,
++                                                       vdew_nonambig),
++                            (char *)0);
++  }
++
+   if (oldversionstatus == PKG_STAT_HALFINSTALLED ||
+       oldversionstatus == PKG_STAT_UNPACKED) {
+     /* Packages that were in ‘installed’ and ‘postinstfailed’ have been

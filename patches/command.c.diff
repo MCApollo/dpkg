@@ -1,0 +1,179 @@
+--- dpkg-1.19.2/lib/dpkg/command.c	2018-10-07 17:07:51.000000000 -0500
++++ dpkg-sileo/lib/dpkg/command.c	2018-12-25 23:00:01.723306800 -0600
+@@ -31,6 +31,16 @@
+ #include <dpkg/path.h>
+ #include <dpkg/command.h>
+ 
++//posix spawn
++#include <stdint.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <spawn.h>
++#include <sys/wait.h>
++#include <sys/stat.h>
++#include <string.h>
++extern char **environ;
++
+ /**
+  * Initialize a command structure.
+  *
+@@ -209,3 +219,158 @@
+ 	execlp(shell, shell, mode, cmd, NULL);
+ 	ohshite(_("unable to execute %s (%s)"), name, cmd);
+ }
++
++#define PROC_PIDPATHINFO_MAXSIZE  (1024)
++static int file_exist(const char *filename) {
++    struct stat buffer;
++    int r = stat(filename, &buffer);
++    return (r == 0);
++}
++
++static char *searchpath(const char *binaryname){
++    if (strstr(binaryname, "/") != NULL){
++        if (file_exist(binaryname)){
++            char *foundpath = (char *)malloc((strlen(binaryname) + 1) * (sizeof(char)));
++            strcpy(foundpath, binaryname);
++            return foundpath;
++        } else {
++       return NULL;
++   }
++    }
++    
++    char *pathvar = getenv("PATH");
++    
++    char *dir = strtok(pathvar,":");
++    while (dir != NULL){
++        char searchpth[PROC_PIDPATHINFO_MAXSIZE];
++        strcpy(searchpth, dir);
++        strcat(searchpth, "/");
++        strcat(searchpth, binaryname);
++        
++        if (file_exist(searchpth)){
++            char *foundpath = (char *)malloc((strlen(searchpth) + 1) * (sizeof(char)));
++            strcpy(foundpath, searchpth);
++            return foundpath;
++        }
++        
++        dir = strtok(NULL, ":");
++    }
++    return NULL;
++}
++
++static bool isShellScript(const char *path){
++    FILE *file = fopen(path, "r");
++    uint8_t header[2];
++    if (fread(header, sizeof(uint8_t), 2, file) == 2){
++        if (header[0] == '#' && header[1] == '!'){
++            fclose(file);
++            return true;
++        }
++    }
++    fclose(file);
++    return false;
++}
++
++static char *getInterpreter(char *path){
++    FILE *file = fopen(path, "r");
++    char *interpreterLine = NULL;
++    unsigned long lineSize = 0;
++    getline(&interpreterLine, &lineSize, file);
++    
++    char *rawInterpreter = (interpreterLine+2);
++    rawInterpreter = strtok(rawInterpreter, " ");
++    rawInterpreter = strtok(rawInterpreter, "\n");
++    
++    char *interpreter = (char *)malloc((strlen(rawInterpreter)+1) * sizeof(char));
++    strcpy(interpreter, rawInterpreter);
++    
++    free(interpreterLine);
++    fclose(file);
++    return interpreter;
++}
++
++static char *fixedCmd(const char *cmdStr){
++    char *cmdCpy = (char *)malloc((strlen(cmdStr)+1) * sizeof(char));
++    strcpy(cmdCpy, cmdStr);
++    
++    char *cmd = strtok(cmdCpy, " ");
++    
++    uint8_t size = strlen(cmd) + 1;
++    
++    char *args = cmdCpy + size;
++    if ((strlen(cmdStr) - strlen(cmd)) == 0)
++        args = NULL;
++    
++    char *abs_path = searchpath(cmd);
++    if (abs_path){
++        bool isScript = isShellScript(abs_path);
++        if (isScript){
++            char *interpreter = getInterpreter(abs_path);
++            
++            uint8_t commandSize = strlen(interpreter) + 1 + strlen(abs_path);
++            
++            if (args){
++                commandSize += 1 + strlen(args);
++            }
++            
++            char *rawCommand = (char *)malloc(sizeof(char) * (commandSize + 1));
++            strcpy(rawCommand, interpreter);
++            strcat(rawCommand, " ");
++            strcat(rawCommand, abs_path);
++            
++            if (args){
++                strcat(rawCommand, " ");
++                strcat(rawCommand, args);
++            }
++       rawCommand[(commandSize)+1] = '\0';
++            
++            free(interpreter);
++            free(abs_path);
++            free(cmdCpy);
++            
++            return rawCommand;
++        } else {
++            uint8_t commandSize = strlen(abs_path);
++            
++            if (args){
++                commandSize += 1 + strlen(args);
++            }
++            
++            char *rawCommand = (char *)malloc(sizeof(char) * (commandSize + 1));
++            strcat(rawCommand, abs_path);
++            
++            if (args){
++                strcat(rawCommand, " ");
++                strcat(rawCommand, args);
++            }
++       rawCommand[(commandSize)+1] = '\0';
++            
++            free(abs_path);
++            free(cmdCpy);
++            
++            return rawCommand;
++        }
++    }
++    return cmdCpy;
++}
++
++void
++runcmd(struct command *cmd)
++{
++	int i = 0;
++	char cmdstring[200];
++	char *ptr = cmdstring; // set ptr to the start of the destination buffer
++	for (i=0; i<cmd->argc; i++) {
++		const char *current_arg = cmd->argv[i];
++		char c;
++		while ( (c = *current_arg++) ) {
++			// copy each character to the destination buffer until the end of the current string
++			*ptr++ = c;
++		}
++		*ptr++ = ' '; // or whatever joining character you want
++	}
++	*ptr = '\0'; // null terminate
++	char *fullcmd = fixedCmd(cmdstring);
++	command_shell(fullcmd, cmd->name);
++	ohshite(_("unable to execute %s (%s)"), cmd->name, cmd->filename);
++}
+\ No newline at end of file

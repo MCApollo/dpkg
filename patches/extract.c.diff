@@ -1,0 +1,11 @@
+--- dpkg-1.19.2/dpkg-deb/extract.c	2018-10-07 17:05:06.000000000 -0500
++++ dpkg-sileo/dpkg-deb/extract.c	2018-12-25 23:00:01.703306690 -0600
+@@ -32,7 +32,7 @@
+ #include <dirent.h>
+ #include <fcntl.h>
+ #include <unistd.h>
+-#include <ar.h>
++//#include <ar.h>
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include <stdlib.h>

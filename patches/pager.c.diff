@@ -1,0 +1,11 @@
+--- dpkg-1.19.2/lib/dpkg/pager.c	2018-10-08 04:43:48.000000000 -0500
++++ dpkg-sileo/lib/dpkg/pager.c	2018-12-25 23:00:01.727306822 -0600
+@@ -35,6 +35,8 @@
+ #include <dpkg/command.h>
+ #include <dpkg/pager.h>
+ 
++#include <string.h>
++
+ static bool pager_enabled = true;
+ 
+ void

@@ -1,0 +1,10 @@
+--- dpkg-1.19.2/lib/dpkg/dpkg.h	2018-10-07 17:07:51.000000000 -0500
++++ dpkg-sileo/lib/dpkg/dpkg.h	2018-12-25 23:00:01.723306800 -0600
+@@ -68,6 +68,7 @@
+ #define CONTROLFILE        "control"
+ #define CONFFILESFILE      "conffiles"
+ #define PREINSTFILE        "preinst"
++#define EXTRAINSTFILE	   "extrainst_"
+ #define POSTINSTFILE       "postinst"
+ #define PRERMFILE          "prerm"
+ #define POSTRMFILE         "postrm"

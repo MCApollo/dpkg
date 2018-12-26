@@ -1,0 +1,11 @@
+--- dpkg-1.19.2/src/script.c	2018-10-08 04:43:48.000000000 -0500
++++ dpkg-sileo/src/script.c	2018-12-25 23:00:01.899307770 -0600
+@@ -203,7 +203,7 @@
+ 			ohshite(_("cannot set security execution context for "
+ 			          "maintainer script"));
+ 
+-		command_exec(cmd);
++		runcmd(cmd);
+ 	}
+ 	subproc_signals_ignore(cmd->name);
+ 	rc = subproc_reap(pid, cmd->name, warn);

@@ -1,0 +1,11 @@
+--- dpkg-1.19.2/lib/dpkg/ar.h	2018-10-07 17:07:51.000000000 -0500
++++ dpkg-sileo/lib/dpkg/ar.h	2018-12-25 23:00:01.719306778 -0600
+@@ -24,7 +24,7 @@
+ #include <sys/types.h>
+ 
+ #include <stdbool.h>
+-#include <ar.h>
++#include "ar.h"
+ 
+ #include <dpkg/macros.h>
+ 
